@@ -6,8 +6,7 @@ from ..config import LENGTH_BUDGET_CHARS
 
 # A check takes the draft (a Draft row), the run's sources (list of dicts with
 # id/title/text), and an LLMClient, and returns (status, detail). Status is one of
-# passed | failed | uncertain | errored. The rule checks below ignore the llm; the
-# claim-support check is meant to use it.
+# passed | failed | uncertain | errored. The rule checks below ignore the llm.
 
 
 async def required_disclaimer(draft, sources, llm) -> tuple[str, str]:
@@ -32,11 +31,5 @@ async def sections_well_formed(draft, sources, llm) -> tuple[str, str]:
 
 
 async def claims_supported(draft, sources, llm) -> tuple[str, str]:
-    # TASK 2. This is not a rule. A claim in the draft is supported only if a cited
-    # source backs its meaning, not merely its words. A line that reuses a source's
-    # words but changes what they mean is not supported; a faithful paraphrase is.
-    #
-    # Decide how to judge that, implement it here, wire it into the runner next to
-    # the rule checks, and report which claims fail and why. You have the run's
-    # sources and the LLMClient available.
-    raise NotImplementedError("task 2: implement the claim-support check")
+    # TODO: not implemented. See the assignment for what this check needs to do.
+    raise NotImplementedError("claims_supported is not implemented")

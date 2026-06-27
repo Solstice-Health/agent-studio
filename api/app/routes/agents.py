@@ -45,9 +45,6 @@ async def create_agent(
     workspace=Depends(get_workspace),
     session=Depends(get_session),
 ):
-    # SEED: this does not validate tool_keys against the registry, so an agent can be
-    # created referencing a tool that does not exist. test_create_agent_rejects_unknown_tool
-    # expects it to reject that.
     agent = Agent(
         workspace_id=workspace.id,
         name=body.name,

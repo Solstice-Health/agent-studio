@@ -9,15 +9,12 @@ from ..models import Draft, Source
 
 
 class SimulatedCrash(BaseException):
-    """Stands in for the process dying mid-run. It is a BaseException on purpose, so
-    ordinary tool-error handling (``except Exception``) does not swallow it. Only the
-    task 1 resume fixture triggers it; real tools never raise it."""
+    """Used by the resume test fixture to mimic the process dying mid-run. A
+    BaseException so normal error handling does not catch it; real tools never raise it."""
 
 
-# Test hook for the task 1 resume fixture. When set to a section title, add_section
-# writes that section to the database and then raises SimulatedCrash, mimicking the
-# process dying right after a side effect but before the engine records the result.
-# Tests set this; nothing else does.
+# Test hook for the resume fixture. When set to a section title, add_section writes
+# that section and then raises SimulatedCrash. Tests set this; nothing else does.
 SIMULATE_CRASH_ON_SECTION: str | None = None
 
 
@@ -65,8 +62,6 @@ async def _add_section(args: dict, ctx: ToolContext) -> dict:
     await ctx.session.flush()
 
     if SIMULATE_CRASH_ON_SECTION is not None and section["title"] == SIMULATE_CRASH_ON_SECTION:
-        # The section is committed, but the engine has not recorded the tool result
-        # yet. This is the crash window task 1 has to survive on resume.
         await ctx.session.commit()
         raise SimulatedCrash(f"crash after writing section {section['title']!r}")
 
@@ -74,9 +69,8 @@ async def _add_section(args: dict, ctx: ToolContext) -> dict:
 
 
 async def _ask_user(args: dict, ctx: ToolContext) -> dict:
-    # SEED STUB: this blocks in memory and cannot survive a restart. Making it a
-    # durable pause that resumes on an answer is a stretch task.
-    raise NotImplementedError("ask_user is a stub; make it a durable, resumable pause")
+    # TODO: not implemented.
+    raise NotImplementedError("ask_user is not implemented")
 
 
 async def _fetch_reference(args: dict, ctx: ToolContext) -> dict:

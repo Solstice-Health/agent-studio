@@ -5,8 +5,7 @@ from sqlalchemy import select
 from ..models import CheckResult, Draft, Source
 from . import checks
 
-# SEED: only the rule checks are wired in. Task 2 adds claims_supported here, and
-# decides what an "uncertain" result should do to the gate.
+# The checks the gate runs. Add new ones here.
 GATE_CHECKS = {
     "required_disclaimer": checks.required_disclaimer,
     "length_budget": checks.length_budget,
@@ -34,8 +33,6 @@ async def run_gate(session, run, llm=None):
         session.add(
             CheckResult(draft_id=draft.id, check_key=key, status=status, detail=detail)
         )
-        # NOTE: only a hard "failed" blocks today. An "uncertain" result slips through
-        # and the draft is accepted. Deciding what uncertain should do is part of task 2.
         if status == "failed":
             blocked = True
 

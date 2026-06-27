@@ -70,9 +70,6 @@ async def list_runs(workspace=Depends(get_workspace), session=Depends(get_sessio
 
 @router.get("/{run_id}")
 async def get_run(run_id: int, workspace=Depends(get_workspace), session=Depends(get_session)):
-    # PLANTED ISSUE (stretch): this looks the run up by id only, with no workspace
-    # check, so one workspace can read another's run. Contrast list_runs above, which
-    # scopes to the workspace.
     run = await session.get(Run, run_id)
     if run is None:
         raise HTTPException(status_code=404, detail="run not found")
@@ -113,9 +110,7 @@ def _sse(obj: dict) -> str:
 
 @router.get("/{run_id}/stream")
 async def stream_run(run_id: int):
-    # No workspace header here on purpose: the browser's EventSource cannot set custom
-    # headers, so the run view streams by id alone. The scoped reads are GET "" and the
-    # run detail endpoints.
+    # EventSource cannot set custom headers, so the run view streams by id alone.
     async def gen():
         last_seq = 0
         for _ in range(240):  # ~120s cap so the stream cannot hang open forever
@@ -144,5 +139,4 @@ async def stream_run(run_id: int):
 
 @router.post("/{run_id}/answer")
 async def answer_run(run_id: int, body: AnswerIn, workspace=Depends(get_workspace)):
-    # SEED STUB for the ask_user stretch. A paused run cannot be resumed yet.
-    raise HTTPException(status_code=501, detail="answering a paused run is not implemented (stretch)")
+    raise HTTPException(status_code=501, detail="not implemented")
