@@ -17,6 +17,7 @@ services:
     build: ./api
     environment:
       DATABASE_URL: postgresql+asyncpg://agent:agent@postgres:5432/agent_studio
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     ports:
       - "8000:8000"
     depends_on:

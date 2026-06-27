@@ -17,13 +17,17 @@ def _blob(messages: list[Message]) -> str:
 
 
 class ScriptedLLM:
-    """A deterministic stand-in for a model provider, used by the tests and the seed run.
+    """A deterministic stand-in for the model, for the tests.
+
+    The agent runs on a real model in production (see AnthropicLLM). This test double
+    implements the same LLMClient interface and replays fixed steps, so the run engine
+    can be driven through its failure modes deterministically, with no key and no
+    network. The test suite injects it; nothing in the live run path uses it.
 
     Given a list of scripted steps per run, it returns the next step for the agent
     loop. The script is matched by a marker that appears in the brief, and the step
     index is the number of assistant turns already in the transcript, so it answers
-    correctly however you structure the loop. Swap in a real client (see AnthropicLLM)
-    to run against a live model.
+    correctly however you structure the loop.
     """
 
     def __init__(self, scripts: dict[str, list[Completion]]):

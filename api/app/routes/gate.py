@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 
 from ..db import get_session
-from ..fixtures import make_scripted_llm
+from ..llm import AnthropicLLM
 from ..gate.runner import run_gate
 from ..middleware import get_workspace
 from ..models import CheckResult, Run
@@ -17,7 +17,9 @@ async def run_gate_route(run_id: int, workspace=Depends(get_workspace), session=
     run = await session.get(Run, run_id)
     if run is None:
         raise HTTPException(status_code=404, detail="run not found")
-    draft = await run_gate(session, run, make_scripted_llm())
+    # The rule checks and the verification tool are deterministic and ignore the model.
+    # The model is only here for a check that needs one (e.g. an uncertain claim).
+    draft = await run_gate(session, run, AnthropicLLM())
     if draft is None:
         raise HTTPException(status_code=400, detail="run has no draft yet")
     await session.commit()

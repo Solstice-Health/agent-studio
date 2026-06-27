@@ -1,4 +1,4 @@
-from .anthropic_stub import AnthropicLLM
+from .anthropic import AnthropicLLM
 from .base import Completion, LLMClient, Message, ToolCall, ToolSpec
 from .scripted import ScriptedLLM
 

@@ -18,7 +18,7 @@ It's multi-tenant. People belong to a workspace, and a workspace can never reach
 
 ## What's in the seed (you don't write any content)
 
-You won't be writing copy or inventing a product. The brief, the sources, and a recorded run that drafts from them all ship in the seed. Your job is the tools and the runtime, not the words.
+You won't be writing copy or inventing a product. The brief and the sources ship in the seed, and the tests include a recorded run that drafts from them (driven by the test double), so your job is the tools and the runtime, not the words.
 
 The seeded example is a one-pager for a made-up product, the Halo sleep band, aimed at regular consumers. Three short sources back it:
 
@@ -32,9 +32,10 @@ The recorded run reads those and produces a draft of cited sections. One section
 
 Read this part closely, it shapes everything else.
 
-- Anything that needs a model talks to it through one `LLMClient` interface. In the tests it's a `ScriptedLLM` that replays fixed steps, so the runtime is deterministic to test and costs nothing. For a live run, fill in the `AnthropicLLM` adapter with your own key.
+- The agent runs on a real model. It talks to the model through one `LLMClient` interface, and the live implementation is the `AnthropicLLM` adapter you wire up. Running the agent needs an API key (we give you one, see Setup). This is the product: a real model driving the loop.
+- The tests do not call the model. They inject `ScriptedLLM`, a deterministic stand-in that replays fixed steps through the same interface, so you can drive the engine and its failure modes with no key and no network. It is a test double, not a second way to run the agent.
 - The tools are plain, deterministic functions. The claim-support **verification tool** in particular grounds a claim in its cited sources and returns inspectable evidence, with no model call. That is what makes judging auditable and unit-testable.
-- So the model orchestrates (what to draft, which claims to check) and the tools do the verifiable work. A run is deterministic in the tests because the model is scripted and the tools are deterministic; swap in the real adapter and the same code runs against a live model.
+- So a real model orchestrates (what to draft, which claims to check) and the deterministic tools do the verifiable work. You build the tools and the runtime; the model is the live engine they run under.
 
 ## How a run works
 
@@ -64,7 +65,7 @@ agent-studio/
     app/
       models.py        Workspace, User, Agent, Run, RunStep, Draft, CheckResult, Source
       middleware.py    workspace + user resolution from request headers
-      llm/             LLMClient protocol, ScriptedLLM, AnthropicLLM adapter
+      llm/             LLMClient protocol, AnthropicLLM (real client), ScriptedLLM (test double)
       tools/           the tool registry, the sample tools, and verification.py (the judge's tool)
       gate/            the check runner + the checks
       engine/          the run loop
@@ -86,7 +87,11 @@ docker compose exec api python seed.py
 open http://localhost:3000
 ```
 
-The backend tests run on in-memory SQLite, so the test loop needs no Postgres. See `api/README.md`. The auth shim and the `X-User-Email` and `X-Workspace-Slug` headers are documented there too; auth is kept simple on purpose, so don't spend time on it.
+The backend tests run on in-memory SQLite and never call a model, so the test loop needs no Postgres and no key. See `api/README.md`.
+
+To run the agent itself against a real model, put an API key in the environment as `ANTHROPIC_API_KEY`. We provide one for this assignment, so don't spend your own; just don't commit it. Everything except a live run works without it.
+
+The auth shim and the `X-User-Email` and `X-Workspace-Slug` headers are documented in `api/README.md` too; auth is kept simple on purpose, so don't spend time on it.
 
 ## Your tasks
 
@@ -98,7 +103,7 @@ The backend tests run on in-memory SQLite, so the test loop needs no Postgres. S
 
 **3. The gate.** Wire the verification tool into the gate so a draft with an unsupported claim is blocked, and the gate reports which claim failed and why. The rule checks (disclaimer, length, well-formed sections) are done for you.
 
-**4. Run it against a real model.** Fill in the `AnthropicLLM` adapter (or your provider of choice) so the same agent drafts and judges through your tools with a live model. Be ready to run it and walk us through it, including the prompts and how you handle a claim the verification tool can't settle on its own.
+**4. The real model.** The agent runs on a live model through the `AnthropicLLM` adapter. Implement it (Anthropic, or your provider of choice) so the agent drafts and judges through your tools for real, not just under the test double. The prompts and the tool-use loop are yours to get right, and this is where your judgment about working with a real model shows. Be ready to run it live and walk us through it, including how you handle a claim the verification tool can't settle on its own.
 
 ### Stretch (optional)
 

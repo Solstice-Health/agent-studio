@@ -1,6 +1,7 @@
-"""The seeded content the agent drafts from, plus the scripted runs that drive the
-ScriptedLLM. None of this is a candidate decision: the brief, the sources, and the
-recorded run are fixed so every candidate is graded on the same material."""
+"""The seeded material every candidate is graded on: the brief, the sources, and the
+fixed scripts the test double (ScriptedLLM) replays in the test suite. None of this is a
+candidate decision. The live agent drafts by calling a real model (see AnthropicLLM);
+these scripts exist only so the run engine can be tested deterministically, with no key."""
 
 from __future__ import annotations
 
@@ -69,6 +70,7 @@ SCRIPTS = {
 }
 
 def make_scripted_llm() -> ScriptedLLM:
+    # Builds the test double the test suite injects. A live run uses AnthropicLLM, not this.
     return ScriptedLLM(SCRIPTS)
 
 

@@ -10,7 +10,8 @@ from sqlalchemy import select
 
 from ..db import SessionLocal, get_session
 from ..engine.loop import start_run
-from ..fixtures import create_halo_run, make_scripted_llm
+from ..fixtures import create_halo_run
+from ..llm import AnthropicLLM
 from ..middleware import get_current_user, get_workspace
 from ..models import Agent, Draft, Run, RunStep
 
@@ -31,7 +32,10 @@ async def _run_in_background(run_id: int) -> None:
         if run is None:
             return
         try:
-            await start_run(session, run, make_scripted_llm())
+            # The agent runs on a real model. This needs ANTHROPIC_API_KEY in the
+            # environment and the AnthropicLLM adapter implemented; until then a run
+            # fails here. The tests drive the engine with the scripted double instead.
+            await start_run(session, run, AnthropicLLM())
         except Exception:
             run.status = "failed"
             await session.commit()

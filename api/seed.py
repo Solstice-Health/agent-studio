@@ -1,5 +1,6 @@
-"""Load two workspaces, their users and agents, and the recorded Halo run into the
-database. Run with: docker compose exec api python seed.py"""
+"""Load two workspaces, their users and agents, and a Halo run for each into the
+database. The runs start in 'created' status; they draft once you run the agent against
+a real model (see AnthropicLLM). Run with: docker compose exec api python seed.py"""
 
 import asyncio
 
