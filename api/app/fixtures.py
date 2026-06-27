@@ -68,17 +68,8 @@ SCRIPTS = {
     "loop forever fixture": NEVER_FINALIZE_SCRIPT,
 }
 
-# Verdicts the scripted model returns for the claim-support check, matched by a phrase
-# in the claim under review. null means the model is not sure.
-VERDICTS = {
-    "clinically proven": {"supported": False, "reason": "the only evidence is an internal 87% study, not clinical proof"},
-    "more than a day": {"supported": True, "reason": "the spec sheet lists 30 hours of battery"},
-    "trusted by athletes": {"supported": None, "reason": "no source mentions athletes; this reads as marketing, not a factual claim"},
-}
-
-
 def make_scripted_llm() -> ScriptedLLM:
-    return ScriptedLLM(SCRIPTS, VERDICTS)
+    return ScriptedLLM(SCRIPTS)
 
 
 async def create_halo_run(session, workspace, agent, created_by=None) -> Run:

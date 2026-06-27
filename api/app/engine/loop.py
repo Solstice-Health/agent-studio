@@ -5,7 +5,7 @@ import json
 from ..models import Agent, RunStep
 from ..tools.registry import TOOLS, ToolContext, tool_specs_for
 
-# Working transcript for each in-flight run, held in memory while it executes.
+# Working transcript for each in-flight run, keyed by run id.
 _TRANSCRIPTS: dict[int, list] = {}
 
 

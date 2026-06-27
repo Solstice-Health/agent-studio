@@ -70,7 +70,7 @@ async def test_throwing_tool_does_not_kill_run(session):
             {"kind": "final", "text": "done"},
         ]
     }
-    await start_run(session, run, ScriptedLLM(scripts, {}))
+    await start_run(session, run, ScriptedLLM(scripts))
     assert run.status == "completed"
 
 
@@ -123,5 +123,5 @@ async def test_ask_user_pauses_persists_and_resumes(session):
             {"kind": "final", "text": "done"},
         ]
     }
-    await start_run(session, run, ScriptedLLM(scripts, {}))
+    await start_run(session, run, ScriptedLLM(scripts))
     assert run.status == "needs_input"
