@@ -31,5 +31,7 @@ async def sections_well_formed(draft, sources, llm) -> tuple[str, str]:
 
 
 async def claims_supported(draft, sources, llm) -> tuple[str, str]:
-    # TODO: not implemented. See the assignment for what this check needs to do.
+    # TODO: not implemented. Use the verification tool (app/tools/verification.py) to
+    # ground each claim in the sources it cites, and fail the check if any claim is
+    # unsupported.
     raise NotImplementedError("claims_supported is not implemented")
