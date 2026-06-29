@@ -114,11 +114,16 @@ The auth shim and the `X-User-Email` and `X-Workspace-Slug` headers are document
 
 The rest is for the conversation: keeping this alive across model providers, versioning the prompts, how it scales.
 
+## Deploy
+
+Put a live instance somewhere we can click through. This is a Dockerized API and web UI rather than a static site, so Vercel will not host the backend; a container host fits better (Render, Railway, Fly.io, whatever you like). How you run the model for a hosted demo, a real key or the scripted double the tests use, and how you handle the database, is part of the exercise. Send the live URL.
+
 ## What to send back
 
 1. The code. The previously-skipped tests should pass, and add your own for what you build, especially the verification tool and the resume case.
 2. A short `DECISIONS.md`: the two or three calls you thought hardest about and the trade-offs, where you used AI and how you checked it, and what you'd do next plus any risk you'd flag before this saw real traffic.
 3. Hand it over the way you would to a teammate: a branch, readable commits, and whatever we need to run it.
+4. A live URL for the deployed instance, with a line on how you ran it.
 
 ## How we read it
 
