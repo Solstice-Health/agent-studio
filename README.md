@@ -82,18 +82,18 @@ Start with `api/tests/`, `api/app/tools/`, and `api/app/engine/`.
 ## Invariants
 
 We run an automated check suite against your submission. Change the implementations however
-you like, but keep the contracts below stable — their names, locations, signatures, and
-shapes — or the suite can't run against your code.
+you like, but keep these contracts stable — names, locations, signatures, and shapes — or the
+suite can't run against your code:
 
-- `app/tools/verification.py` — `verify_claim_support(claim: str, cited_sources: list[dict]) -> dict`. Keep the name, the location, and the positional arguments. It returns a dict with a `"status"` key whose value is one of `"supported"`, `"unsupported"`, or `"uncertain"`. Source dicts keep their `id` / `title` / `text` keys.
-- `app/engine/loop.py` — `start_run(session, run, llm)` and `resume_run(session, run, llm)`. Keep the names and signatures.
-- `app/gate/runner.py` — `run_gate(session, run, llm=None)`. It sets `draft.gate_status` to `"accepted"` or `"blocked"`.
-- `app/gate/checks.py` — a check is `(draft, sources, llm) -> (status, detail)`. Add checks freely; don't change the existing `check_key`s or what they mean.
-- `app/tools/registry.py` — keep `TOOLS`, `ToolContext`, and the crash hooks `SIMULATE_CRASH_ON_SECTION` and `SimulatedCrash` (resume is exercised through them).
-- `app/fixtures.py` — keep `create_halo_run(...)`, `make_scripted_llm()`, `NEVER_FINALIZE_BRIEF`, and the Halo section titles (`Sleep, measured`, `Built for daily life`, `The fine print`).
-- `app/llm/scripted.py` — `ScriptedLLM` stays a test double behind the `LLMClient` interface, and the engine takes an injected `llm`.
-- `app/llm/` — a `class AnthropicLLM` lives here.
-- Models keep their shape: `Draft.sections` items are `{title, body, cited_source_ids}`; `Run` keeps `status` / `step_count` / `brief`; `CheckResult` keeps `check_key` / `status`.
+- `app/tools/verification.py` — `verify_claim_support(claim, cited_sources) -> dict`
+- `app/engine/loop.py` — `start_run(session, run, llm)`, `resume_run(session, run, llm)`
+- `app/gate/runner.py` — `run_gate(session, run, llm=None)`
+- `app/gate/checks.py` — `(draft, sources, llm) -> (status, detail)` checks (add freely; don't change existing `check_key`s)
+- `app/tools/registry.py` — `TOOLS`, `ToolContext`, `SIMULATE_CRASH_ON_SECTION`, `SimulatedCrash`
+- `app/fixtures.py` — `create_halo_run`, `make_scripted_llm`, `NEVER_FINALIZE_BRIEF`, the Halo section titles
+- `app/llm/scripted.py` — `ScriptedLLM` (test double behind `LLMClient`)
+- `app/llm/` — `AnthropicLLM`
+- `app/models.py` — `Draft.sections`, `Run`, `CheckResult` field shapes
 
 ## Setup
 
