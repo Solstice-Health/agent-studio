@@ -2,7 +2,7 @@
 
 This is close to the work you'd do here: a real model drafting and judging content through a set of tools you build, and the runtime that has to keep it alive when things go wrong. We've given you a working starter repo to extend, so you're not starting from a blank page.
 
-Do the core well. The stretch list is optional, and we'll talk through whatever you skip. We would rather see the core done carefully, with tests, than everything done loosely.
+**Please keep this to about four hours of focused work.** The core done well in that time is a complete submission — we don't expect every task finished. Where you run out of time, a line in DECISIONS.md about what you would reach for next counts for as much as the code. We mean this: do not spend a weekend on it. (Deploying is still required and takes only a few minutes on top of the build — see Deploy.)
 
 ## Using AI
 
@@ -79,6 +79,22 @@ agent-studio/
 
 Start with `api/tests/`, `api/app/tools/`, and `api/app/engine/`.
 
+## Invariants
+
+We run an automated check suite against your submission. Change the implementations however
+you like, but keep the contracts below stable — their names, locations, signatures, and
+shapes — or the suite can't run against your code.
+
+- `app/tools/verification.py` — `verify_claim_support(claim: str, cited_sources: list[dict]) -> dict`. Keep the name, the location, and the positional arguments. It returns a dict with a `"status"` key whose value is one of `"supported"`, `"unsupported"`, or `"uncertain"`. Source dicts keep their `id` / `title` / `text` keys.
+- `app/engine/loop.py` — `start_run(session, run, llm)` and `resume_run(session, run, llm)`. Keep the names and signatures.
+- `app/gate/runner.py` — `run_gate(session, run, llm=None)`. It sets `draft.gate_status` to `"accepted"` or `"blocked"`.
+- `app/gate/checks.py` — a check is `(draft, sources, llm) -> (status, detail)`. Add checks freely; don't change the existing `check_key`s or what they mean.
+- `app/tools/registry.py` — keep `TOOLS`, `ToolContext`, and the crash hooks `SIMULATE_CRASH_ON_SECTION` and `SimulatedCrash` (resume is exercised through them).
+- `app/fixtures.py` — keep `create_halo_run(...)`, `make_scripted_llm()`, `NEVER_FINALIZE_BRIEF`, and the Halo section titles (`Sleep, measured`, `Built for daily life`, `The fine print`).
+- `app/llm/scripted.py` — `ScriptedLLM` stays a test double behind the `LLMClient` interface, and the engine takes an injected `llm`.
+- `app/llm/` — a `class AnthropicLLM` lives here.
+- Models keep their shape: `Draft.sections` items are `{title, body, cited_source_ids}`; `Run` keeps `status` / `step_count` / `brief`; `CheckResult` keeps `check_key` / `status`.
+
 ## Setup
 
 ```bash
@@ -95,22 +111,17 @@ The auth shim and the `X-User-Email` and `X-Workspace-Slug` headers are document
 
 ## Your tasks
 
-### Core
-
 **1. The tool layer.** Build the claim-support verification tool in `app/tools/verification.py`. Given a claim and the sources it cites, it decides whether the sources actually back the claim and returns the evidence behind that decision. A claim that overstates its sources is unsupported; a faithful paraphrase is supported; a claim with no backing source is unsupported. Make the unit tests in `tests/test_tools.py` pass, and harden the tools you touch so they validate their inputs and fail clearly. This is the heart of the exercise, and it needs no model.
 
 **2. The run engine.** The loop works on the happy path, but run state sits in memory, so a dropped connection or a restart loses a run in flight, and resume doesn't come back clean. Make runs durable and resumable: a restart mid-run shouldn't lose the run or corrupt its transcript, and a resumed run shouldn't redo work it already did. While you're in there, the loop has no step budget, and one throwing tool takes down the whole run instead of being caught and handed back to the agent. Fix both.
 
-**3. The gate.** Wire the verification tool into the gate so a draft with an unsupported claim is blocked, and the gate reports which claim failed and why. The rule checks (disclaimer, length, well-formed sections) are done for you.
+**3. The gate.** Wire the verification tool into the gate so a draft with an unsupported claim is blocked, and the gate reports which claim failed and why. Decide what the gate does when the verification tool returns "uncertain" — block, accept, or send it to the model — and make the call deliberately. The rule checks (disclaimer, length, well-formed sections) are done for you.
 
 **4. The real model.** The agent runs on a live model through the `AnthropicLLM` adapter. Implement it (Anthropic, or your provider of choice) so the agent drafts and judges through your tools for real, not just under the test double. The prompts and the tool-use loop are yours to get right, and this is where your judgment about working with a real model shows. Be ready to run it live and walk us through it, including how you handle a claim the verification tool can't settle on its own.
 
-### Stretch (optional)
+**5. Tenant isolation.** One read path lets a workspace reach another's data. Find it, fix it, and add a test that pins the boundary.
 
-- **Tenant isolation.** One read path lets a workspace reach another's data. Find it, fix it, add a test.
-- **Human-in-the-loop.** Make `ask_user` a real pause that survives a restart and resumes on `POST /runs/{id}/answer`.
-- **The uncertain claim.** Decide what the gate does when the verification tool returns "uncertain": block, accept, or send it to the model.
-- **Tool arguments.** Validate tool arguments against their specs before running them.
+**6. Human-in-the-loop.** Make `ask_user` a real pause that survives a restart and resumes on `POST /runs/{id}/answer`.
 
 The rest is for the conversation: keeping this alive across model providers, versioning the prompts, how it scales.
 
