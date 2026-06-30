@@ -1,0 +1,27 @@
+:root {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #1a1a1a;
+}
+
+main {
+  max-width: 720px;
+  margin: 40px auto;
+  padding: 0 16px;
+}
+
+pre {
+  background: #f5f5f5;
+  padding: 12px;
+  border-radius: 6px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+button {
+  cursor: pointer;
+}
