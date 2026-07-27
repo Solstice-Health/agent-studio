@@ -6,17 +6,15 @@ from sqlalchemy import select
 from ..db import get_session
 from ..llm import AnthropicLLM
 from ..gate.runner import run_gate
-from ..middleware import get_workspace
-from ..models import CheckResult, Run
+from ..middleware import get_workspace, load_run_for_workspace
+from ..models import CheckResult
 
 router = APIRouter(tags=["gate"])
 
 
 @router.post("/runs/{run_id}/gate")
 async def run_gate_route(run_id: int, workspace=Depends(get_workspace), session=Depends(get_session)):
-    run = await session.get(Run, run_id)
-    if run is None:
-        raise HTTPException(status_code=404, detail="run not found")
+    run = await load_run_for_workspace(session, run_id, workspace)
     # The rule checks and the verification tool are deterministic and ignore the model.
     # The model is only here for a check that needs one (e.g. an uncertain claim).
     draft = await run_gate(session, run, AnthropicLLM())

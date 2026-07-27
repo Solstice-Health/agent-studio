@@ -5,7 +5,7 @@ from fastapi import Depends, Header, HTTPException
 from sqlalchemy import select
 
 from .db import get_session
-from .models import User, Workspace
+from .models import Run, User, Workspace
 
 
 async def get_workspace(
@@ -37,3 +37,16 @@ async def get_current_user(
     if user is None:
         raise HTTPException(status_code=404, detail="Unknown user for this workspace")
     return user
+
+
+async def load_run_for_workspace(session, run_id: int, workspace: Workspace) -> Run:
+    """Fetch a run by id, scoped to the caller's workspace. Another workspace's run is a
+    404, not a 403, so the response does not leak that the id exists."""
+    run = (
+        await session.execute(
+            select(Run).where(Run.id == run_id, Run.workspace_id == workspace.id)
+        )
+    ).scalar_one_or_none()
+    if run is None:
+        raise HTTPException(status_code=404, detail="run not found")
+    return run

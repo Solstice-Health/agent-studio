@@ -52,7 +52,7 @@ class Run(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     workspace_id: Mapped[int] = mapped_column(ForeignKey("workspaces.id"), index=True)
     agent_id: Mapped[int] = mapped_column(ForeignKey("agents.id"))
-    # created | running | needs_input | completed | failed | cancelled
+    # created | running | completed | failed | cancelled
     status: Mapped[str] = mapped_column(String, default="created")
     brief: Mapped[str] = mapped_column(Text, default="")
     step_count: Mapped[int] = mapped_column(Integer, default=0)

@@ -59,8 +59,8 @@ HALO_SCRIPT = [
     {"kind": "final", "text": "Draft complete."},
 ]
 
-# A chatty agent that keeps calling a tool and never finalizes, for the step-budget
-# task. Long but finite, so it can never hang a test.
+# A chatty agent that keeps calling a tool and never finalizes, so the step budget has
+# something to stop. Long but finite, so it can never hang a test.
 NEVER_FINALIZE_BRIEF = "loop forever fixture"
 NEVER_FINALIZE_SCRIPT = [_tool_step(f"n{i}", "list_sources", {}) for i in range(60)]
 

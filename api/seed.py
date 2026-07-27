@@ -10,7 +10,7 @@ from app.db import SessionLocal, init_db
 from app.fixtures import create_halo_run
 from app.models import Agent, User, Workspace
 
-ALL_TOOLS = ["list_sources", "get_source", "add_section", "ask_user", "fetch_reference"]
+ALL_TOOLS = ["list_sources", "get_source", "add_section", "fetch_reference"]
 
 
 async def main() -> None:

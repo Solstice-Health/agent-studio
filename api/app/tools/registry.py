@@ -8,16 +8,6 @@ from ..config import ALLOWED_FETCH_HOSTS
 from ..models import Draft, Source
 
 
-class SimulatedCrash(BaseException):
-    """Used by the resume test fixture to mimic the process dying mid-run. A
-    BaseException so normal error handling does not catch it; real tools never raise it."""
-
-
-# Test hook for the resume fixture. When set to a section title, add_section writes
-# that section and then raises SimulatedCrash. Tests set this; nothing else does.
-SIMULATE_CRASH_ON_SECTION: str | None = None
-
-
 @dataclass
 class ToolContext:
     session: object
@@ -60,17 +50,7 @@ async def _add_section(args: dict, ctx: ToolContext) -> dict:
     # Reassign so SQLAlchemy notices the JSON column changed.
     draft.sections = draft.sections + [section]
     await ctx.session.flush()
-
-    if SIMULATE_CRASH_ON_SECTION is not None and section["title"] == SIMULATE_CRASH_ON_SECTION:
-        await ctx.session.commit()
-        raise SimulatedCrash(f"crash after writing section {section['title']!r}")
-
     return {"ok": True, "section_title": section["title"]}
-
-
-async def _ask_user(args: dict, ctx: ToolContext) -> dict:
-    # TODO: not implemented.
-    raise NotImplementedError("ask_user is not implemented")
 
 
 async def _fetch_reference(args: dict, ctx: ToolContext) -> dict:
@@ -86,7 +66,6 @@ TOOLS = {
     "list_sources": _list_sources,
     "get_source": _get_source,
     "add_section": _add_section,
-    "ask_user": _ask_user,
     "fetch_reference": _fetch_reference,
 }
 
@@ -116,15 +95,6 @@ TOOL_SPECS = [
                 "cited_source_ids": {"type": "array", "items": {"type": "integer"}},
             },
             "required": ["title", "body"],
-        },
-    },
-    {
-        "name": "ask_user",
-        "description": "Pause the run and ask the human a question.",
-        "parameters": {
-            "type": "object",
-            "properties": {"question": {"type": "string"}},
-            "required": ["question"],
         },
     },
     {
