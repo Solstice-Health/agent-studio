@@ -1,4 +1,3 @@
-import pytest
 from sqlalchemy import select
 
 from app.engine.loop import MAX_STEPS, start_run
@@ -69,17 +68,23 @@ async def test_throwing_tool_does_not_kill_run(session):
     assert run.status == "completed"
 
 
-# --- The work. These are skipped until you build it. ---
-
-
-@pytest.mark.skip(reason="task 4: one workspace must not be able to read another's run")
-async def test_cannot_read_run_from_other_workspace(client, seed):
+async def test_cannot_read_run_from_other_workspace(client, sessionmaker_, seed):
     def h(slug):
         return {"X-Workspace-Slug": slug, "X-User-Email": f"creator@{slug}.test"}
 
-    acme = await seed("acme", with_agent=True)
+    await seed("acme", with_agent=True)
     globex = await seed("globex", with_agent=True)
-    made = await client.post("/runs", headers=h("globex"), json={"agent_id": globex["agent_id"]})
-    globex_run_id = made.json()["id"]
-    leaked = await client.get(f"/runs/{globex_run_id}", headers=h("acme"))
-    assert leaked.status_code in (403, 404)
+    async with sessionmaker_() as s:
+        ws = await s.get(Workspace, globex["workspace_id"])
+        agent = await s.get(Agent, globex["agent_id"])
+        run = await create_halo_run(s, ws, agent)
+        await s.commit()
+        run_id = run.id
+
+    # The owner still reads it, so the boundary is scoping and not a blanket 404.
+    assert (await client.get(f"/runs/{run_id}", headers=h("globex"))).status_code == 200
+
+    for path in (f"/runs/{run_id}", f"/runs/{run_id}/trace"):
+        assert (await client.get(path, headers=h("acme"))).status_code in (403, 404)
+    blocked = await client.post(f"/runs/{run_id}/gate", headers=h("acme"))
+    assert blocked.status_code in (403, 404)

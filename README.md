@@ -2,13 +2,11 @@
 
 An agent drafts content through tools you build, and a gate decides whether the draft can ship. A real model orchestrates; the deterministic tools do the auditable work. You extend a working starter repo — you're not starting from a blank page.
 
-**Keep this to one focused sitting.** The core done well is a complete submission; we don't expect every task finished.
-
 Use AI however you normally do. We're not checking whether you can write a tool loop by hand — we're reading the judgment around it: tools that are clean and correct, and a judge whose decisions you can defend.
 
 ## What's in the seed
 
-It's multi-tenant. People belong to a workspace, and a workspace can never reach another workspace's runs or drafts.
+It's multi-tenant. People belong to a workspace, and a workspace can never reach another workspace's runs or drafts — the read paths are already scoped, and a test pins the boundary.
 
 You don't write any copy. The brief and the sources ship in the seed — a one-pager for the Halo sleep band, backed by three short sources:
 
@@ -37,8 +35,6 @@ When a run finishes it has a draft, and the draft goes through the gate. Pass ev
 **2. The gate.** Wire the verification tool in so a draft with an unsupported claim is blocked and the gate reports which claim failed and why. What "uncertain" should do is your call — make it deliberately. The rule checks (disclaimer, length, well-formed sections) are done for you.
 
 **3. The real model.** Implement `AnthropicLLM` (or your provider of choice) so the agent drafts and judges through your tools for real, not just under the test double. The prompts and the tool-use loop are yours to get right. Be ready to run it live and walk us through it, including how you handle a claim the verification tool can't settle.
-
-**4. Tenant isolation.** One read path lets a workspace reach another's data. Find it, fix it, and pin it with a test.
 
 The rest is for the conversation: surviving a change of model provider, versioning the prompts, how it scales.
 
@@ -85,9 +81,3 @@ We run an automated suite against your submission. Change the implementations ho
 - `app/fixtures.py` — `create_halo_run`, `make_scripted_llm`, `NEVER_FINALIZE_BRIEF`, the Halo section titles
 - `app/llm/` — `AnthropicLLM`, and `ScriptedLLM` behind `LLMClient`
 - `app/models.py` — `Draft.sections`, `Run`, `CheckResult` field shapes
-
-## How we read it
-
-We won't be tallying features, and we'll go through your submission with you. Roughly in order of what counts: is the verification tool correct, clear, and well-tested, and could the next person extend it without fear? Does the gate block what it should and say why? Does the live agent really draft and judge through your tools, and can you defend the prompts?
-
-Where something is underspecified, make a call, say why in a comment, and keep going. We read that as a good sign.

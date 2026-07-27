@@ -12,7 +12,7 @@ from ..db import SessionLocal, get_session
 from ..engine.loop import start_run
 from ..fixtures import create_halo_run
 from ..llm import AnthropicLLM
-from ..middleware import get_current_user, get_workspace
+from ..middleware import get_current_user, get_workspace, load_run_for_workspace
 from ..models import Agent, Draft, Run, RunStep
 
 router = APIRouter(prefix="/runs", tags=["runs"])
@@ -70,9 +70,7 @@ async def list_runs(workspace=Depends(get_workspace), session=Depends(get_sessio
 
 @router.get("/{run_id}")
 async def get_run(run_id: int, workspace=Depends(get_workspace), session=Depends(get_session)):
-    run = await session.get(Run, run_id)
-    if run is None:
-        raise HTTPException(status_code=404, detail="run not found")
+    run = await load_run_for_workspace(session, run_id, workspace)
     draft = (
         await session.execute(select(Draft).where(Draft.run_id == run.id))
     ).scalar_one_or_none()
@@ -87,9 +85,7 @@ async def get_run(run_id: int, workspace=Depends(get_workspace), session=Depends
 
 @router.get("/{run_id}/trace")
 async def get_trace(run_id: int, workspace=Depends(get_workspace), session=Depends(get_session)):
-    run = await session.get(Run, run_id)
-    if run is None:
-        raise HTTPException(status_code=404, detail="run not found")
+    await load_run_for_workspace(session, run_id, workspace)
     steps = (
         await session.execute(
             select(RunStep).where(RunStep.run_id == run_id).order_by(RunStep.seq)
