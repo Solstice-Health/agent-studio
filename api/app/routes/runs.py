@@ -22,10 +22,6 @@ class RunCreate(BaseModel):
     agent_id: int
 
 
-class AnswerIn(BaseModel):
-    answer: str
-
-
 async def _run_in_background(run_id: int) -> None:
     async with SessionLocal() as session:
         run = await session.get(Run, run_id)
@@ -139,8 +135,3 @@ async def stream_run(run_id: int):
             await asyncio.sleep(0.5)
 
     return StreamingResponse(gen(), media_type="text/event-stream")
-
-
-@router.post("/{run_id}/answer")
-async def answer_run(run_id: int, body: AnswerIn, workspace=Depends(get_workspace)):
-    raise HTTPException(status_code=501, detail="not implemented")

@@ -53,7 +53,7 @@ async def test_fetch_reference_rejects_bad_host(session):
 # --- the verification tool: build it (skipped until then) ---
 
 
-@pytest.mark.skip(reason="task: build the deterministic claim-support verification tool")
+@pytest.mark.skip(reason="task 1: build the deterministic claim-support verification tool")
 def test_verify_flags_unsupported_overstatement():
     from app.tools.verification import verify_claim_support
 
@@ -64,7 +64,7 @@ def test_verify_flags_unsupported_overstatement():
     assert result["status"] == "unsupported"
 
 
-@pytest.mark.skip(reason="task: build the deterministic claim-support verification tool")
+@pytest.mark.skip(reason="task 1: build the deterministic claim-support verification tool")
 def test_verify_passes_faithful_paraphrase():
     from app.tools.verification import verify_claim_support
 
@@ -73,7 +73,7 @@ def test_verify_passes_faithful_paraphrase():
     assert result["status"] == "supported"
 
 
-@pytest.mark.skip(reason="task: build the deterministic claim-support verification tool")
+@pytest.mark.skip(reason="task 1: build the deterministic claim-support verification tool")
 def test_verify_flags_uncited_claim():
     from app.tools.verification import verify_claim_support
 
