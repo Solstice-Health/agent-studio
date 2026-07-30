@@ -6,7 +6,8 @@ from ..config import LENGTH_BUDGET_CHARS
 
 # A check takes the draft (a Draft row), the run's sources (list of dicts with
 # id/title/text), and an LLMClient, and returns (status, detail). Status is one of
-# passed | failed | uncertain | errored. The rule checks below ignore the llm.
+# passed | failed | uncertain | errored. The rule checks below ignore the llm; a check
+# that wants a model is free to use it.
 
 
 async def required_disclaimer(draft, sources, llm) -> tuple[str, str]:
@@ -33,5 +34,5 @@ async def sections_well_formed(draft, sources, llm) -> tuple[str, str]:
 async def claims_supported(draft, sources, llm) -> tuple[str, str]:
     # TODO: not implemented. Use the verification tool (app/tools/verification.py) to
     # ground each claim in the sources it cites, and fail the check if any claim is
-    # unsupported.
+    # unsupported. Pass `llm` through if your verifier wants a model.
     raise NotImplementedError("claims_supported is not implemented")

@@ -15,8 +15,7 @@ router = APIRouter(tags=["gate"])
 @router.post("/runs/{run_id}/gate")
 async def run_gate_route(run_id: int, workspace=Depends(get_workspace), session=Depends(get_session)):
     run = await load_run_for_workspace(session, run_id, workspace)
-    # The rule checks and the verification tool are deterministic and ignore the model.
-    # The model is only here for a check that needs one (e.g. an uncertain claim).
+    # The rule checks ignore the model; it is here for any check that wants one.
     draft = await run_gate(session, run, AnthropicLLM())
     if draft is None:
         raise HTTPException(status_code=400, detail="run has no draft yet")

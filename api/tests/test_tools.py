@@ -25,7 +25,7 @@ async def _ctx(session):
     return ToolContext(session=session, run=run)
 
 
-# --- the provided tools are deterministic; these exercise them ---
+# --- the provided tools ---
 
 
 async def test_get_source_returns_text(session):
@@ -48,35 +48,3 @@ async def test_fetch_reference_rejects_bad_host(session):
     ctx = await _ctx(session)
     with pytest.raises(ValueError):
         await TOOLS["fetch_reference"]({"url": "http://evil.example/x"}, ctx)
-
-
-# --- the verification tool: build it (skipped until then) ---
-
-
-@pytest.mark.skip(reason="task 1: build the deterministic claim-support verification tool")
-def test_verify_flags_unsupported_overstatement():
-    from app.tools.verification import verify_claim_support
-
-    sources = [
-        {"id": 2, "title": "Study summary", "text": "In a 200-person internal study, the band's sleep-stage detection agreed with a clinical sleep lab 87% of the time."}
-    ]
-    result = verify_claim_support("Clinically proven sleep tracking you can rely on.", sources)
-    assert result["status"] == "unsupported"
-
-
-@pytest.mark.skip(reason="task 1: build the deterministic claim-support verification tool")
-def test_verify_passes_faithful_paraphrase():
-    from app.tools.verification import verify_claim_support
-
-    sources = [{"id": 1, "title": "Spec sheet", "text": "Battery lasts 30 hours on a charge."}]
-    result = verify_claim_support("Keeps going for more than a day on a single charge.", sources)
-    assert result["status"] == "supported"
-
-
-@pytest.mark.skip(reason="task 1: build the deterministic claim-support verification tool")
-def test_verify_flags_uncited_claim():
-    from app.tools.verification import verify_claim_support
-
-    sources = [{"id": 1, "title": "Spec sheet", "text": "Battery lasts 30 hours on a charge."}]
-    result = verify_claim_support("Trusted by athletes.", sources)
-    assert result["status"] in ("unsupported", "uncertain")

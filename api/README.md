@@ -39,4 +39,4 @@ curl -H "X-Workspace-Slug: acme" -H "X-User-Email: creator@acme.test" localhost:
 ## Environment
 
 - `DATABASE_URL`: a SQLAlchemy async URL. Defaults to a local SQLite file when unset. `docker-compose.yml` points it at Postgres. The tests override it with in-memory SQLite.
-- `ANTHROPIC_API_KEY`: the key the agent's model client reads. Needed to run the agent against a real model; the tests and the deterministic tools do not use it.
+- `ANTHROPIC_API_KEY`: the key the agent's model client reads. Needed to run the agent against a real model; the tests do not use it.

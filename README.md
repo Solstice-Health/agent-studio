@@ -1,6 +1,6 @@
 # Agent Studio Assignment
 
-An agent drafts content through tools you build, and a gate decides whether the draft can ship. A real model orchestrates; the deterministic tools do the auditable work. You extend a working starter repo — you're not starting from a blank page.
+An agent drafts content through tools you build, and a gate decides whether the draft can ship. A real model orchestrates; the tools do the work you can audit. You extend a working starter repo — you're not starting from a blank page.
 
 Use AI however you normally do. We're not checking whether you can write a tool loop by hand — we're reading the judgment around it: tools that are clean and correct, and a judge whose decisions you can defend.
 
@@ -22,7 +22,7 @@ Read this part closely, it shapes everything else.
 
 - The agent runs on a **real model**, through the `LLMClient` interface. `AnthropicLLM` is the live implementation and you wire it up. That's the product.
 - `ScriptedLLM` is a **test double** behind the same interface. The tests inject it so they run with no key and no network. It is not a second way to run the agent.
-- The **tools are plain deterministic functions**. The claim-support verification tool grounds a claim in its cited sources and returns inspectable evidence, with no model call. That is what makes judging auditable and unit-testable.
+- The **tools do the checkable work**. The claim-support verification tool grounds a claim in its cited sources and returns inspectable evidence, so a gate decision can be audited rather than taken on trust. How it reaches that verdict — heuristics, a model, or both — is your call.
 
 The run loop, the gate runner, and the rule checks ship working. A run goes `created → running → completed`, or `failed` if it hits the step budget. A tool that throws is caught and the error handed back to the agent. A run keeps a transcript — the brief, each model turn, each tool call, each result — and that transcript is the record of truth.
 
@@ -30,7 +30,9 @@ When a run finishes it has a draft, and the draft goes through the gate. Pass ev
 
 ## Your tasks
 
-**1. The tool layer.** Build `verify_claim_support` in `app/tools/verification.py`. Given a claim and the sources it cites, decide whether those sources actually back it, and return the evidence behind the decision. An overstatement is unsupported; a faithful paraphrase is supported; an uncited claim is unsupported. Make `tests/test_tools.py` pass. This is the heart of the exercise and it needs no model.
+**1. The tool layer.** Build `verify_claim_support` in `app/tools/verification.py`. Given a claim and the sources it cites, decide whether those sources actually back it, and return the evidence behind the decision. An overstatement is unsupported; a faithful paraphrase is supported; an uncited claim is unsupported. This is the heart of the exercise. How you decide is open — heuristics, a model, or both — so long as the verdict comes with evidence someone else could check.
+
+The tests for it are yours to write, and we read them as closely as the tool: which cases you thought were worth pinning is most of the signal. `tests/test_tools.py` shows the house style on the provided tools. Keep them runnable with no key and no network — `ScriptedLLM` is there to inject if your verifier wants a model.
 
 **2. The gate.** Wire the verification tool in so a draft with an unsupported claim is blocked and the gate reports which claim failed and why. What "uncertain" should do is your call — make it deliberately. The rule checks (disclaimer, length, well-formed sections) are done for you.
 
@@ -73,7 +75,7 @@ web/             Next.js: run view, draft + gate view
 
 We run an automated suite against your submission. Change the implementations however you like, but keep these contracts stable — names, locations, signatures, shapes — or the suite can't run:
 
-- `app/tools/verification.py` — `verify_claim_support(claim, cited_sources) -> dict`
+- `app/tools/verification.py` — `async verify_claim_support(claim, cited_sources, llm=None) -> dict`
 - `app/tools/registry.py` — `TOOLS`, `ToolContext`
 - `app/engine/loop.py` — `start_run(session, run, llm)`
 - `app/gate/runner.py` — `run_gate(session, run, llm=None)`
