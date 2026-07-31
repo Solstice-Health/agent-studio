@@ -8,7 +8,9 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U agent"]
+      # -d matters: pg_isready defaults the database to the user name, so without it the
+      # probe asks for a database called "agent" and postgres logs a FATAL every 2s.
+      test: ["CMD-SHELL", "pg_isready -U agent -d agent_studio"]
       interval: 2s
       timeout: 3s
       retries: 20
@@ -18,6 +20,8 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://agent:agent@postgres:5432/agent_studio
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-5}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
     ports:
       - "8000:8000"
     depends_on:
@@ -26,6 +30,12 @@ services:
     volumes:
       - ./api:/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
 
   web:
     build: ./web
@@ -34,7 +44,8 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     volumes:
       - ./web:/app
       - /app/node_modules

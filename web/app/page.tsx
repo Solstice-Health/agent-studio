@@ -8,20 +8,30 @@ import { createRun, listAgents, listRuns } from "../lib/api";
 export default function Home() {
   const [agents, setAgents] = useState<any[]>([]);
   const [runs, setRuns] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   async function refresh() {
-    setAgents(await listAgents());
-    setRuns(await listRuns());
+    try {
+      setAgents(await listAgents());
+      setRuns(await listRuns());
+      setError(null);
+    } catch (e: any) {
+      setError(e.message);
+    }
   }
 
   useEffect(() => {
     refresh();
+    // The seeded runs finish in the background, so poll to see them land.
+    const timer = setInterval(refresh, 2000);
+    return () => clearInterval(timer);
   }, []);
 
   return (
     <main>
       <h1>Agent Studio</h1>
       <p>Workspace: acme (the demo client acts as the acme creator).</p>
+      {error && <p style={{ color: "crimson" }}>Error: {error}</p>}
 
       <h2>Agents</h2>
       <ul>
@@ -30,7 +40,11 @@ export default function Home() {
             {a.name}{" "}
             <button
               onClick={async () => {
-                await createRun(a.id);
+                try {
+                  await createRun(a.id);
+                } catch (e: any) {
+                  setError(e.message);
+                }
                 refresh();
               }}
             >

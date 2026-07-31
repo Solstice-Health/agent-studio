@@ -1,6 +1,3 @@
-import pytest
-
-
 def _h(slug="acme"):
     return {"X-Workspace-Slug": slug, "X-User-Email": f"creator@{slug}.test"}
 
@@ -48,7 +45,6 @@ async def test_list_agents_is_scoped_to_workspace(client, seed):
     assert len(rows) == 1
 
 
-@pytest.mark.skip(reason="task: create_agent should validate tool_keys against the registry")
 async def test_create_agent_rejects_unknown_tool(client, seed):
     await seed("acme")
     r = await client.post(

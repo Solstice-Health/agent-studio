@@ -8,31 +8,22 @@ const HEADERS = {
 
 export const streamUrl = (runId: number) => `${BASE}/runs/${runId}/stream`;
 
-export async function listAgents() {
-  const r = await fetch(`${BASE}/agents`, { headers: HEADERS });
-  return r.json();
+// Surfaces the api's `detail` rather than letting a non-2xx body flow on as if it were
+// the expected shape and fail somewhere further from the cause.
+async function request(path: string, init: RequestInit = {}) {
+  const r = await fetch(`${BASE}${path}`, { headers: HEADERS, ...init });
+  const body = await r.json().catch(() => null);
+  if (!r.ok) {
+    throw new Error(body?.detail ?? `${init.method ?? "GET"} ${path} failed (${r.status})`);
+  }
+  return body;
 }
 
-export async function listRuns() {
-  const r = await fetch(`${BASE}/runs`, { headers: HEADERS });
-  return r.json();
-}
+export const listAgents = () => request("/agents");
+export const listRuns = () => request("/runs");
+export const getRun = (runId: number) => request(`/runs/${runId}`);
 
-export async function createRun(agentId: number) {
-  const r = await fetch(`${BASE}/runs`, {
-    method: "POST",
-    headers: HEADERS,
-    body: JSON.stringify({ agent_id: agentId }),
-  });
-  return r.json();
-}
+export const createRun = (agentId: number) =>
+  request("/runs", { method: "POST", body: JSON.stringify({ agent_id: agentId }) });
 
-export async function getRun(runId: number) {
-  const r = await fetch(`${BASE}/runs/${runId}`, { headers: HEADERS });
-  return r.json();
-}
-
-export async function runGate(runId: number) {
-  const r = await fetch(`${BASE}/runs/${runId}/gate`, { method: "POST", headers: HEADERS });
-  return r.json();
-}
+export const runGate = (runId: number) => request(`/runs/${runId}/gate`, { method: "POST" });
