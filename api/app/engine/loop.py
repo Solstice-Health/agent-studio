@@ -1,9 +1,14 @@
 from __future__ import annotations
 
 import json
+import logging
+
+from sqlalchemy import func, select
 
 from ..models import Agent, RunStep
 from ..tools.registry import TOOLS, ToolContext, tool_specs_for
+
+logger = logging.getLogger(__name__)
 
 # Upper bound on model turns, so a runaway agent cannot loop forever.
 MAX_STEPS = 24
@@ -16,9 +21,12 @@ def compose_system_prompt(agent: Agent | None) -> str:
 
 
 def _assistant_message(completion: dict) -> dict:
+    message: dict = {"role": "assistant", "content": completion.get("text", "")}
     if completion.get("kind") == "tool_calls":
-        return {"role": "assistant", "content": "", "tool_calls": completion.get("tool_calls", [])}
-    return {"role": "assistant", "content": completion.get("text", "")}
+        message["tool_calls"] = completion.get("tool_calls", [])
+    if completion.get("provider_content"):
+        message["provider_content"] = completion["provider_content"]
+    return message
 
 
 async def execute_tool(session, run, tool_call: dict) -> dict:
@@ -40,6 +48,21 @@ _KIND_BY_ROLE = {
     "assistant": "model_turn",
     "tool": "tool_result",
 }
+
+
+async def record_error(session, run, detail: str) -> None:
+    """Append an `error` entry to the transcript. A run that fails has to say why in the
+    record the UI reads, not only in the server log."""
+    seq = (
+        await session.execute(
+            select(func.max(RunStep.seq)).where(RunStep.run_id == run.id)
+        )
+    ).scalar()
+    session.add(
+        RunStep(run_id=run.id, seq=(seq if seq is not None else -1) + 1, kind="error",
+                payload={"role": "error", "content": detail})
+    )
+    await session.commit()
 
 
 async def _record(session, run, seq: int, message: dict) -> None:
@@ -69,10 +92,16 @@ async def start_run(session, run, llm):
         await _record(session, run, seq, message)
 
     specs = tool_specs_for(agent.tool_keys if agent else None)
+    logger.info(
+        "run %s started: agent=%s tools=%s",
+        run.id, run.agent_id, [spec["name"] for spec in specs],
+    )
 
     while True:
         if run.step_count >= MAX_STEPS:
             run.status = "failed"
+            logger.warning("run %s hit the %d-step budget without finalizing", run.id, MAX_STEPS)
+            await record_error(session, run, f"step budget of {MAX_STEPS} model turns exhausted")
             break
 
         completion = await llm.complete(transcript, specs)
@@ -83,10 +112,17 @@ async def start_run(session, run, llm):
 
         if completion.get("kind") != "tool_calls":
             run.status = "completed"
+            logger.info("run %s completed after %d model turns", run.id, run.step_count)
             break
 
         for tool_call in completion.get("tool_calls", []):
             result = await execute_tool(session, run, tool_call)
+            if "error" in result:
+                logger.warning(
+                    "run %s tool %s failed: %s", run.id, tool_call["name"], result["error"]
+                )
+            else:
+                logger.info("run %s tool %s ok", run.id, tool_call["name"])
             message = {
                 "role": "tool",
                 "tool_call_id": tool_call.get("id"),

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
 
@@ -45,6 +45,12 @@ async def create_agent(
     workspace=Depends(get_workspace),
     session=Depends(get_session),
 ):
+    unknown = sorted(set(body.tool_keys) - VALID_TOOL_KEYS)
+    if unknown:
+        raise HTTPException(
+            status_code=400,
+            detail=f"unknown tool_keys: {', '.join(unknown)}. Known: {', '.join(sorted(VALID_TOOL_KEYS))}",
+        )
     agent = Agent(
         workspace_id=workspace.id,
         name=body.name,

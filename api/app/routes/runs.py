@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from fastapi.responses import StreamingResponse
@@ -9,11 +10,13 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from ..db import SessionLocal, get_session
-from ..engine.loop import start_run
+from ..engine.loop import record_error, start_run
 from ..fixtures import create_halo_run
 from ..llm import AnthropicLLM
 from ..middleware import get_current_user, get_workspace, load_run_for_workspace
 from ..models import Agent, Draft, Run, RunStep
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/runs", tags=["runs"])
 
@@ -23,18 +26,30 @@ class RunCreate(BaseModel):
 
 
 async def _run_in_background(run_id: int) -> None:
+    """Drive one run to completion. The agent runs on a real model, so this needs
+    ANTHROPIC_API_KEY in the environment; the tests drive the engine with the scripted
+    double instead."""
     async with SessionLocal() as session:
         run = await session.get(Run, run_id)
         if run is None:
+            logger.error("run %s disappeared before it could start", run_id)
             return
         try:
-            # The agent runs on a real model. This needs ANTHROPIC_API_KEY in the
-            # environment and the AnthropicLLM adapter implemented; until then a run
-            # fails here. The tests drive the engine with the scripted double instead.
             await start_run(session, run, AnthropicLLM())
-        except Exception:
-            run.status = "failed"
-            await session.commit()
+        except Exception as exc:  # noqa: BLE001 - a background task has nowhere to raise
+            logger.exception("run %s failed", run_id)
+            # The session may be poisoned if the failure came from the database, so roll
+            # back before writing the failure down.
+            await session.rollback()
+            await _mark_failed(session, run_id, f"{type(exc).__name__}: {exc}")
+
+
+async def _mark_failed(session, run_id: int, detail: str) -> None:
+    run = await session.get(Run, run_id)
+    if run is None:
+        return
+    run.status = "failed"
+    await record_error(session, run, detail)
 
 
 @router.post("")
@@ -54,6 +69,7 @@ async def create_run(
         raise HTTPException(status_code=404, detail="agent not found")
     run = await create_halo_run(session, workspace, agent, user)
     await session.commit()
+    logger.info("run %s queued for workspace %s by %s", run.id, workspace.slug, user.email)
     background.add_task(_run_in_background, run.id)
     return {"id": run.id, "status": run.status}
 

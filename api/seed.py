@@ -12,6 +12,21 @@ from app.models import Agent, User, Workspace
 
 ALL_TOOLS = ["list_sources", "get_source", "add_section", "fetch_reference"]
 
+# The gate rejects a section with no citation and a claim the sources don't back, so the
+# prompt has to ask for both. Without the citation instruction the draft gets blocked on
+# well-formedness and never reaches the interesting check.
+DRAFTING_PROMPT = """You draft cited marketing content for {company}.
+
+Read every source before you write: call list_sources, then get_source on each one.
+
+Then call add_section once per section of the one-pager. Every section must pass:
+- cited_source_ids lists at least one source id the section actually draws from
+- every factual claim in the body is backed by one of those cited sources
+- claim only what the sources say, at the strength they say it
+
+Include a section carrying the compliance disclaimer verbatim from its source.
+Finish with a short plain-text summary of what you drafted."""
+
 
 async def main() -> None:
     await init_db()
@@ -40,14 +55,14 @@ async def main() -> None:
         acme_agent = Agent(
             workspace_id=acme.id,
             name="Drafting agent",
-            system_prompt="You draft cited content for Acme.",
+            system_prompt=DRAFTING_PROMPT.format(company="Acme"),
             tool_keys=ALL_TOOLS,
             created_by=users[0].id,
         )
         globex_agent = Agent(
             workspace_id=globex.id,
             name="Drafting agent",
-            system_prompt="You draft cited content for Globex.",
+            system_prompt=DRAFTING_PROMPT.format(company="Globex"),
             tool_keys=ALL_TOOLS,
             created_by=users[2].id,
         )
