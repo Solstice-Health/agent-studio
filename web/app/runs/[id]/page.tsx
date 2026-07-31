@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import { getRun, runGate } from "../../../lib/api";
 import { useRunStream } from "../../../lib/useSSE";
+import Transcript from "./Transcript";
 
 export default function RunPage() {
   const params = useParams();
@@ -13,12 +14,20 @@ export default function RunPage() {
   const events = useRunStream(id);
   const [run, setRun] = useState<any>(null);
   const [gate, setGate] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
     const tick = async () => {
-      const data = await getRun(id);
-      if (alive) setRun(data);
+      try {
+        const data = await getRun(id);
+        if (alive) {
+          setRun(data);
+          setError(null);
+        }
+      } catch (e: any) {
+        if (alive) setError(e.message);
+      }
     };
     tick();
     const timer = setInterval(tick, 1000);
@@ -28,17 +37,29 @@ export default function RunPage() {
     };
   }, [id]);
 
+  // A failed run records why in the transcript. Without pulling it out, the page reads
+  // "failed" with no reason anywhere in the UI.
+  const failures = events.filter((e) => e.kind === "error");
+
   return (
     <main>
       <h1>Run {id}</h1>
       <p>Status: {run?.status ?? "..."}</p>
+      {error && <p style={{ color: "crimson" }}>Error: {error}</p>}
+
+      {failures.length > 0 && (
+        <section>
+          <h2>Why it failed</h2>
+          {failures.map((e, i) => (
+            <pre key={i} style={{ color: "crimson" }}>
+              {e.payload?.content ?? JSON.stringify(e.payload)}
+            </pre>
+          ))}
+        </section>
+      )}
 
       <h2>Transcript (live)</h2>
-      <pre>
-        {events.length
-          ? events.map((e) => `${e.event} ${e.kind ?? ""} ${e.seq ?? e.status ?? ""}`).join("\n")
-          : "(waiting for steps...)"}
-      </pre>
+      <Transcript steps={events} />
 
       <h2>Draft</h2>
       {run?.draft?.sections?.length ? (
@@ -46,6 +67,7 @@ export default function RunPage() {
           <div key={i}>
             <h3>{s.title}</h3>
             <p>{s.body}</p>
+            <small>cites: {(s.cited_source_ids ?? []).join(", ") || "nothing"}</small>
           </div>
         ))
       ) : (
@@ -53,8 +75,37 @@ export default function RunPage() {
       )}
 
       <h2>Gate</h2>
-      <button onClick={async () => setGate(await runGate(id))}>Run gate</button>
-      {gate && <pre>{JSON.stringify(gate, null, 2)}</pre>}
+      <button
+        onClick={async () => {
+          try {
+            setGate(await runGate(id));
+            setError(null);
+          } catch (e: any) {
+            setGate(null);
+            setError(e.message);
+          }
+        }}
+      >
+        Run gate
+      </button>
+      {gate && (
+        <div>
+          <p>
+            <strong>{gate.gate_status}</strong>
+          </p>
+          <table>
+            <tbody>
+              {gate.checks.map((c: any) => (
+                <tr key={c.key}>
+                  <td>{c.key}</td>
+                  <td>{c.status}</td>
+                  <td>{c.detail}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </main>
   );
 }

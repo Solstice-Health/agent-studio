@@ -4,7 +4,14 @@ import { useEffect, useState } from "react";
 
 import { streamUrl } from "./api";
 
-type StreamEvent = { event: string; kind?: string; seq?: number; status?: string };
+type StreamEvent = {
+  event: string;
+  kind?: string;
+  seq?: number;
+  status?: string;
+  payload?: any;
+  detail?: string;
+};
 
 export function useRunStream(runId: number): StreamEvent[] {
   const [events, setEvents] = useState<StreamEvent[]>([]);
